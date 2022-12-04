@@ -8,23 +8,31 @@ public class ConcurrentStack<T>: IStack<T>
     public void Push(T item)
     {
         var newHead = new Node(item, head);
-        Interlocked.Exchange(ref head, newHead);
+        while (Interlocked.CompareExchange(ref head, newHead, newHead.Next) != newHead.Next)
+            newHead.Next = head;
         Interlocked.Increment(ref count);
     }
 
     public bool TryPop(out T item)
     {
+
         var currentHead = head;
-        
         if (currentHead is null)
         {
             item = default!;
             return false;
         }
+        while (Interlocked.CompareExchange(ref head, currentHead.Next, currentHead) != currentHead)
+        {
+            currentHead = head;
+            if (currentHead != null)
+                continue;
+            item = default!;
+            return false;
+        }
 
-        item = currentHead.Value;
-        Interlocked.Exchange(ref head, currentHead.Next);
         Interlocked.Decrement(ref count);
+        item = currentHead.Value;
         return true;
     }
 
@@ -32,8 +40,8 @@ public class ConcurrentStack<T>: IStack<T>
     
     private class Node
     {
-        public Node? Next { get; set; }
-        public T Value { get; set; }
+        public Node? Next;
+        public T Value;
 
         public Node(T value) => Value = value;
         
