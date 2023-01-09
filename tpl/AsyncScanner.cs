@@ -12,7 +12,8 @@ namespace TPL
         {
             foreach(var ipAddr in ipAddrs)
             {
-                if (await PingAddr(ipAddr).ConfigureAwait(false) != IPStatus.Success)
+                var pingStatus = await PingAddr(ipAddr).ConfigureAwait(false);
+                if (pingStatus != IPStatus.Success)
                     continue;
 
                 foreach(var port in ports)
@@ -20,7 +21,7 @@ namespace TPL
             }
         }
 
-        private async Task<IPStatus> PingAddr(IPAddress ipAddr, int timeout = 3000)
+        private static async Task<IPStatus> PingAddr(IPAddress ipAddr, int timeout = 3000)
         {
             using var ping = new Ping();
 
